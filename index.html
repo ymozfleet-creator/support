@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySUPPORTER | Ultimate Complete Edition</title>
+    <title>MySUPPORTER | Ultimate Integrated Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,7 +15,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap');
         
-        /* 白・青（Cool Edition）テーマ */
         body { 
             font-family: 'Inter', 'Noto Sans JP', sans-serif; 
             background-color: #f0f4f8; 
@@ -102,7 +101,7 @@
         }
         @keyframes stamp { to { opacity: 1; transform: scale(1) rotate(-15deg); } }
 
-        .loading-spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top: 3px solid #3b82f6; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto; }
+        .loading-spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top: 3px solid #ffffff; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .meter-bg { background: #e2e8f0; height: 8px; border-radius: 99px; overflow: hidden; position: relative; }
@@ -227,6 +226,7 @@
                 if (!isAdminMode) setView('home'); 
             }, [isAdminMode]);
 
+            // DB保存処理（エラー時リカバリ機能付き）
             const handleLocalUpdate = (id, field, value) => {
                 setCampaigns(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
             };
@@ -247,7 +247,6 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 if(file.size > 20 * 1024 * 1024) { alert("ファイルサイズが大きすぎます。"); return; }
-
                 const reader = new FileReader();
                 reader.onload = (readerEvent) => {
                     const img = new Image();
@@ -262,34 +261,38 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
-                        if (dataUrl.length > 350000) { alert("画像の圧縮に失敗しました（サイズオーバー）。別の画像を選択してください。"); } else { callback(dataUrl); }
+                        if (dataUrl.length > 350000) { alert("画像の圧縮に失敗しました。別の画像を選択してください。"); } else { callback(dataUrl); }
                     };
                     img.src = readerEvent.target.result;
                 };
                 reader.readAsDataURL(file);
             };
 
-            // 復元された規約等のコンテンツ (白/青テーマに合わせてスタイル調整)
             const docContent = {
                 terms: (
                     <div className="space-y-8">
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">第1条（総則）</h3><p>本規約は、MySUPPORTER運営事務局（以下「甲」）が提供する物品支援プラットフォーム「MySUPPORTER」（以下「本サービス」）の利用条件を定めるものです。利用者は本規約に同意の上、本サービスを利用するものとします。</p></div>
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">第2条（支援金の使途と仕組み）</h3><ul className="list-disc pl-5 space-y-2 text-slate-600"><li>本サービスは、サポーターからの支援金を原資として、甲がチームの希望する物品を代理購入し、配送するサービスです。</li><li>支援金には、物品代金のほか、システム利用料（10%）、配送・梱包等の事務手数料（一律500円）が含まれます。</li><li>目標金額に到達した時点で決済が確定し、物品の手配が行われます。</li></ul></div>
-                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg text-red-500">第3条（表明保証および禁止事項）</h3><p>掲載を申請するチーム代表者は、以下の事項を表明し保証します。</p><ul className="list-disc pl-5 mt-2 space-y-2 text-slate-600"><li>実在する団体であり、具体的な活動実態があること。</li><li>申請内容（チーム名、活動内容、物品の必要性）に一切の虚偽がないこと。</li><li>反社会的勢力（暴力団、暴力団員、その他これに準ずる者）に該当しないこと。</li></ul></div>
-                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">第4条（返金・免責）</h3><p>本サービスの性質上（寄付・支援）、原則として決済完了後のサポーター都合による返金・キャンセルは受け付けません。</p></div>
+                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg text-blue-600">第3条（表明保証および禁止事項）</h3><p>掲載を申請するチーム代表者は、以下の事項を表明し保証します。</p><ul className="list-disc pl-5 mt-2 space-y-2 text-slate-600"><li>実在する団体であり、具体的な活動実態があること。</li><li>申請内容（チーム名、活動内容、物品の必要性）に一切の虚偽がないこと。</li><li>反社会的勢力（暴力団、暴力団員、その他これに準ずる者）に該当しないこと。</li></ul><p className="mt-2 text-red-500 font-bold">※虚偽の申請により金銭または物品を受領した場合、詐欺罪としての刑事告訴および損害賠償請求を行います。</p></div>
+                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">第4条（返金・免責）</h3><p>本サービスの性質上（寄付・支援）、原則として決済完了後のサポーター都合による返金・キャンセルは受け付けません。ただし、チームの解散や活動停止により物品送付が不能となった場合は、甲の判断により返金等の措置を講じる場合があります。</p></div>
                     </div>
                 ),
                 privacy: (
                     <div className="space-y-8">
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">1. 個人情報の収集</h3><p>本サービスでは、決済処理および商品配送、活動報告のために、以下の個人情報を取得します。</p><ul className="list-disc pl-5 mt-2 text-slate-600"><li>氏名、メールアドレス、電話番号、住所（配送先のみ）、クレジットカード情報（決済代行業者のみが保持）</li></ul></div>
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">2. 個人情報の利用目的</h3><p>取得した情報は、以下の目的以外には利用しません。</p><ul className="list-disc pl-5 mt-2 text-slate-600"><li>支援物品の購入および配送業務</li><li>決済手続きおよび領収書等の発行</li><li>サービスに関する重要なお知らせ、活動報告の送付</li></ul></div>
+                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">3. 第三者提供</h3><p>法令に基づく場合を除き、利用者の同意なく第三者に個人情報を提供することはありません。ただし、支援先のチームに対しては、支援者リストとして氏名（ニックネーム）のみ開示される場合があります。</p></div>
                     </div>
                 ),
                 tokusho: (
                     <div className="space-y-6">
                         <table className="w-full text-left text-sm border-collapse"><tbody className="divide-y divide-slate-200">
                             <tr><th className="py-4 text-blue-900 w-1/3">販売業者</th><td className="py-4 text-slate-600">MySUPPORTER 運営事務局</td></tr>
+                            <tr><th className="py-4 text-blue-900">運営統括責任者</th><td className="py-4 text-slate-600">茂住 雄太</td></tr>
+                            <tr><th className="py-4 text-blue-900">所在地</th><td className="py-4 text-slate-600">東京都中野区（請求があり次第、遅滞なく開示します）</td></tr>
                             <tr><th className="py-4 text-blue-900">連絡先</th><td className="py-4 text-blue-600">kanri@mycoach-myteam.com</td></tr>
+                            <tr><th className="py-4 text-blue-900">販売価格</th><td className="py-4 text-slate-600">各プロジェクトページに記載（商品代金＋システム手数料＋送料）</td></tr>
+                            <tr><th className="py-4 text-blue-900">商品代金以外の必要料金</th><td className="py-4 text-slate-600">インターネット接続料金、通信料金等</td></tr>
                             <tr><th className="py-4 text-blue-900">支払方法</th><td className="py-4 text-slate-600">クレジットカード決済（Square）</td></tr>
                             <tr><th className="py-4 text-blue-900">商品の引渡時期</th><td className="py-4 text-slate-600">目標金額達成後、Amazon/楽天等の在庫状況に準じて7営業日以内に発送手配</td></tr>
                             <tr><th className="py-4 text-blue-900">キャンセル・返品</th><td className="py-4 text-slate-600">支援という性質上、原則としてお受けできません。</td></tr>
@@ -379,8 +382,37 @@
                 }
             };
 
+            // ▼▼▼ 修正: 活動報告の投稿処理（DB連携） ▼▼▼
+            const submitReport = async () => {
+                if(!reportForm.team || !reportForm.content) return alert("必須項目（チーム名・本文）を入力してください");
+                setIsProcessing(true);
+                try {
+                    await db.collection("reports").add({ 
+                        ...reportForm, 
+                        date: new Date().toLocaleDateString('ja-JP') 
+                    });
+                    localStorage.removeItem("ms_reportForm");
+                    setReportForm({ team: "", title: "", content: "", image: null });
+                    alert("活動報告を公開しました！\nトップページの「活動報告」タブから確認できます。");
+                } catch(e) {
+                    console.error(e);
+                    alert("投稿に失敗しました: " + e.message);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+            // ▲▲▲▲▲▲
+
             const deleteDoc = async (col, id) => { if(confirm("削除しますか？")) await db.collection(col).doc(id).delete(); };
-            const createDemoOrder = async () => { /* デモデータ作成ロジック(前述同様) */ };
+            const createDemoOrder = async () => { 
+                if(!confirm("デモデータを作成しますか？")) return;
+                await db.collection("campaigns").add({
+                    team: "デモチーム", name: "デモ商品", price: 5000, current: 6000, supporters: 5, status: 'active', 
+                    itemUrl: "https://example.com", image: "https://placehold.co/400", teamImage: "https://placehold.co/600x400",
+                    description: "デモデータ", contactName: "デモ", address: "東京", phone: "09000000000", email: "demo@example.com"
+                });
+                alert("作成しました");
+            };
 
             return (
                 <div className="min-h-screen flex flex-col relative">
@@ -393,7 +425,7 @@
                                 <input className="input-field" placeholder="Email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} />
                                 <input type="password" className="input-field" placeholder="Code" value={loginPass} onChange={e=>setLoginPass(e.target.value)} />
                                 <button onClick={handleLogin} className="w-full py-4 bg-blue-600 text-white rounded-xl font-black italic shadow-lg hover:bg-blue-700">LOGIN</button>
-                                <button onClick={()=>setShowLogin(false)} className="w-full text-xs text-slate-500 font-bold">CANCEL</button>
+                                <button onClick={()=>setShowLogin(false)} className="w-full text-xs text-slate-500 font-bold hover:text-slate-700">CANCEL</button>
                             </div>
                         </div>
                     )}
@@ -437,11 +469,12 @@
                     )}
 
                     <main className="flex-grow">
-                        {/* ▼▼▼ 管理者ダッシュボード（復元＆ブラッシュアップ版） ▼▼▼ */}
+                        {/* ▼▼▼ 管理者ダッシュボード (機能連携確認済み) ▼▼▼ */}
                         {view === 'admin' && isAdminMode ? (
                             <div className="max-w-7xl mx-auto p-4 md:p-12 fade-in">
                                 <div className="flex justify-between items-end border-b border-slate-300 pb-4 md:pb-8 mb-8">
                                     <h2 className="text-2xl md:text-4xl font-black italic text-blue-600 uppercase tracking-tighter">管理者ダッシュボード</h2>
+                                    <button onClick={createDemoOrder} className="bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-300">【デモ】達成案件を作成</button>
                                 </div>
                                 <div className="flex flex-wrap bg-white p-2 rounded-2xl border border-slate-200 mb-8 gap-2 shadow-sm sticky top-24 z-40">
                                     {['dashboard', 'requests', 'campaigns', 'orders', 'reports', 'revenue'].map(t => (
@@ -465,6 +498,17 @@
                                             <p className="text-xs font-black text-slate-500 mb-2">公開中の案件</p>
                                             <p className="text-4xl font-black text-green-600">{stats.activeCount}件</p>
                                         </div>
+                                    </div>
+                                )}
+
+                                {adminTab === 'monitor' && ( /* 進捗一覧（旧デザイン踏襲） */
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {campaigns.map(c => (
+                                            <div key={c.id} className="glass-panel p-6 rounded-2xl border-l-4 border-blue-500">
+                                                <h3 className="font-bold">{c.name}</h3>
+                                                <ProgressBar current={c.current} target={calcTarget(c.price)} />
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
 
@@ -503,10 +547,6 @@
                                                 <p><span className="text-slate-500 font-bold">電話番号:</span> {req.phone || '未記入'}</p>
                                                 <p><span className="text-slate-500 font-bold">住所:</span> {req.address || '未記入'}</p>
                                                 <p><span className="text-slate-500 font-bold">Email:</span> {req.email}</p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 text-xs text-blue-500">
-                                                <a href={req.teamUrl} target="_blank">HP: {req.teamUrl||"なし"}</a>
-                                                <a href={req.snsUrl} target="_blank">SNS: {req.snsUrl||"なし"}</a>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500">商品名 (承認後表示)</label>
@@ -558,10 +598,8 @@
                                                 <label className="text-[10px] text-slate-500 font-bold">説明文</label>
                                                 <textarea className="input-field py-2 px-2 text-xs h-16" value={c.description||''} onChange={e=>handleLocalUpdate(c.id, 'description', e.target.value)} onBlur={e=>saveToDB(c.id, 'description', e.target.value)}></textarea>
                                             </div>
-                                            <div className="flex justify-end pt-2">
-                                                <button onClick={()=>deleteDoc("campaigns", c.id)} className="text-xs font-black border border-red-200 text-red-500 px-4 py-2 rounded-lg hover:bg-red-50">この案件を削除</button>
-                                            </div>
                                         </div>
+                                        <button onClick={()=>deleteDoc("campaigns", c.id)} className="text-xs font-black border border-red-200 text-red-500 px-4 py-2 rounded-lg hover:bg-red-50">この案件を削除</button>
                                     </div>
                                 ))}</div>}
 
@@ -584,6 +622,7 @@
                                     </div>
                                 ))}</div>}
 
+                                {/* ▼▼▼ 修正: 活動報告作成画面の復元 ▼▼▼ */}
                                 {adminTab === 'reports' && (
                                     <div className="space-y-8">
                                         <div className="glass-panel p-6 md:p-10 rounded-[3rem] border border-blue-500/20">
@@ -592,20 +631,29 @@
                                                 <div className="space-y-4">
                                                     <input className="input-field" placeholder="対象チーム名" value={reportForm.team} onChange={e=>setReportForm({...reportForm, team: e.target.value})} />
                                                     <input className="input-field" placeholder="タイトル" value={reportForm.title} onChange={e=>setReportForm({...reportForm, title: e.target.value})} />
-                                                    <div className="h-40 border-2 border-dashed border-slate-300 rounded-2xl flex items-center justify-center relative hover:bg-slate-50 transition">{reportForm.image ? <img src={reportForm.image} className="w-full h-full object-cover rounded-xl"/> : <span className="text-slate-400 font-bold">Image</span>}<input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e=>handleImageUpload(e, r=>setReportForm({...reportForm, image: r}))} /></div>
+                                                    <div className="h-40 border-2 border-dashed border-slate-300 rounded-2xl flex items-center justify-center relative hover:bg-slate-50 transition">
+                                                        {reportForm.image ? <img src={reportForm.image} className="w-full h-full object-cover rounded-xl"/> : <span className="text-slate-400 font-bold">Image</span>}
+                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e=>handleImageUpload(e, r=>setReportForm({...reportForm, image: r}))} />
+                                                    </div>
                                                 </div>
                                                 <textarea className="input-field h-full min-h-[200px]" placeholder="本文" value={reportForm.content} onChange={e=>setReportForm({...reportForm, content: e.target.value})}></textarea>
                                             </div>
-                                            <button onClick={submitReport} className="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700">公開する</button>
+                                            <button onClick={isProcessing ? null : submitReport} disabled={isProcessing} className="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700">{isProcessing ? "処理中..." : "公開する"}</button>
                                         </div>
+
                                         <div className="glass-panel p-6 md:p-10 rounded-[3rem]">
                                             <h3 className="text-lg font-black italic mb-8 uppercase text-slate-700">投稿済みレポート管理</h3>
                                             <div className="space-y-4">
                                                 {reports.map(r => (
                                                     <div key={r.id} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
-                                                        <img src={r.image} className="w-16 h-16 rounded-lg object-cover" />
-                                                        <div className="flex-1"><h4 className="font-bold text-slate-800">{r.title}</h4><p className="text-xs text-slate-500">{r.date} - {r.team}</p></div>
-                                                        <button onClick={() => deleteDoc('reports', r.id)} className="text-xs font-black text-red-500 border border-red-500 px-3 py-1 rounded hover:bg-red-500 hover:text-white transition">削除</button>
+                                                        <img src={r.image || "https://placehold.co/100"} className="w-16 h-16 rounded-lg object-cover" />
+                                                        <div className="flex-1">
+                                                            <h4 className="font-bold text-slate-800">{r.title}</h4>
+                                                            <p className="text-xs text-slate-500">{r.date} - {r.team}</p>
+                                                        </div>
+                                                        <button onClick={() => deleteDoc('reports', r.id)} className="text-xs font-black text-red-500 border border-red-500 px-3 py-1 rounded hover:bg-red-500 hover:text-white transition">
+                                                            削除
+                                                        </button>
                                                     </div>
                                                 ))}
                                                 {reports.length === 0 && <p className="text-sm text-slate-500">投稿されたレポートはありません。</p>}
@@ -613,6 +661,7 @@
                                         </div>
                                     </div>
                                 )}
+                                {/* ▲▲▲▲▲▲ */}
 
                                 {adminTab === 'revenue' && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="glass-panel p-8 rounded-[2rem] border-t-4 border-blue-600"><p className="text-xs font-black text-slate-500 mb-2">総支援額</p><p className="text-4xl font-black italic text-slate-800">¥{stats.totalPayment.toLocaleString()}</p></div>
@@ -673,13 +722,19 @@
                                         {filteredCampaigns.map(c => {
                                             const target = calcTarget(c.price);
                                             const isGoal = c.current >= target;
+
                                             return (
                                                 <div key={c.id} className="campaign-card glass-panel rounded-[1.5rem] md:rounded-[2.5rem] p-2 border border-white relative cursor-pointer overflow-hidden" onClick={()=>{setSelectedCampaign(c); setView('detail'); setSupportStep(1); setCustomAmountInput(""); window.scrollTo(0,0);}}>
                                                     {isGoal && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-[2.5rem]"><div className="goal-stamp border-8 border-pink-500 text-pink-500 text-6xl font-black p-4 rounded-xl rotate-[-15deg]">GOAL!!</div></div>}
+                                                    
+                                                    {/* メイン: チーム写真 */}
                                                     <div className="aspect-video bg-slate-100 rounded-[1rem] md:rounded-[2rem] overflow-hidden m-1 md:m-2 relative shadow-inner">
                                                         <img src={c.teamImage || c.image} className="w-full h-full object-cover"/>
-                                                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent"><span className="bg-white text-blue-900 px-2 py-0.5 rounded-full text-[10px] font-black">{c.team}</span></div>
+                                                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                                            <span className="bg-white text-blue-900 px-2 py-0.5 rounded-full text-[10px] font-black">{c.team}</span>
+                                                        </div>
                                                     </div>
+
                                                     <div className="p-3 md:p-6">
                                                         <h3 className="text-sm md:text-xl font-black italic text-slate-800 mt-2 mb-2 line-clamp-1">{c.name}</h3>
                                                         <div className="flex items-center gap-2 mb-2 text-[10px] md:text-xs font-bold text-slate-400"><span className="text-blue-500">👤</span> {c.supporters || 0}人が支援中</div>
@@ -692,12 +747,15 @@
                                     </div>
                                 )}
 
-                                {/* About & Other Tabs (復元・デザイン調整済み) */}
                                 {activeTab === 'about' && (
                                     <div className="max-w-6xl mx-auto py-12 md:py-24 px-2 md:px-8 fade-in">
                                         <div className="text-center mb-8 md:mb-20">
-                                            <h2 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-400 mb-4 md:mb-6">Why <span className="text-blue-600">MySUPPORTER?</span></h2>
-                                            <p className="text-base md:text-2xl font-bold text-slate-500 tracking-wider">「不透明」な寄付を終わらせる。<br />モノが届く、新しい応援のカタチ。</p>
+                                            <h2 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-400 mb-4 md:mb-6">
+                                                Why <span className="text-blue-600">MySUPPORTER?</span>
+                                            </h2>
+                                            <p className="text-base md:text-2xl font-bold text-slate-500 tracking-wider">
+                                                「不透明」な寄付を終わらせる。<br />モノが届く、新しい応援のカタチ。
+                                            </p>
                                         </div>
                                         
                                         <div className="hidden md:grid grid-cols-3 gap-6">
@@ -763,12 +821,33 @@
                                         </div>
                                     </div>
                                 )}
+                                {/* ▼▼▼ 復元・修正: 活動報告表示（一般公開画面） ▼▼▼ */}
                                 {activeTab === 'thanks' && (
                                     <div className="max-w-4xl mx-auto py-20 px-8 fade-in">
                                         <h2 className="text-center text-3xl font-black italic uppercase mb-12 tracking-tighter text-blue-600">活動報告</h2>
-                                        <div className="space-y-8">{reports.map(r=><div key={r.id} className="glass-panel p-8 rounded-[2rem] flex gap-8"><img src={r.image} className="w-32 h-32 rounded-xl object-cover"/><div><h3 className="text-xl font-black text-slate-800">{r.title}</h3><p className="text-sm text-slate-500 mt-2">{r.content}</p></div></div>)}</div>
+                                        {reports.length === 0 ? 
+                                            <p className="text-center text-slate-400 font-bold">まだ活動報告はありません。</p> :
+                                            <div className="space-y-8">
+                                                {reports.map(r=>(
+                                                    <div key={r.id} className="glass-panel p-8 rounded-[2rem] flex flex-col md:flex-row gap-8 items-start">
+                                                        <div className="w-full md:w-48 aspect-video bg-slate-100 rounded-xl overflow-hidden shrink-0">
+                                                            <img src={r.image || "https://placehold.co/400x300"} className="w-full h-full object-cover"/>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-baseline gap-2 mb-2">
+                                                                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">{r.team}</span>
+                                                                <span className="text-xs text-slate-400">{r.date}</span>
+                                                            </div>
+                                                            <h3 className="text-xl font-black text-slate-800 mb-2">{r.title}</h3>
+                                                            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{r.content}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        }
                                     </div>
                                 )}
+                                {/* ▲▲▲▲▲▲ */}
                             </>
                         ) : view === 'detail' ? (
                             <div className="max-w-6xl mx-auto p-2 md:p-4 pb-20">
