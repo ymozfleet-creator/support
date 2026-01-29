@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySUPPORTER | Blue Edition Final</title>
+    <title>MySUPPORTER | Final Stable Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -15,7 +15,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap');
         
-        /* ▼ デザイン: 白・青基調 ▼ */
+        /* 白・青基調のデザイン */
         body { 
             font-family: 'Inter', 'Noto Sans JP', sans-serif; 
             background-color: #f0f4f8; 
@@ -99,7 +99,7 @@
         }
         @keyframes stamp { to { opacity: 1; transform: scale(1) rotate(-15deg); } }
 
-        .loading-spinner { border: 4px solid rgba(59, 130, 246, 0.1); border-radius: 50%; border-top: 4px solid #3b82f6; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+        .loading-spinner { border: 4px solid rgba(59, 130, 246, 0.1); border-radius: 50%; border-top: 4px solid #3b82f6; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .meter-bg { background: #e2e8f0; height: 8px; border-radius: 99px; overflow: hidden; position: relative; }
@@ -233,19 +233,38 @@
             const handleLocalUpdate = (id, field, value) => {
                 setCampaigns(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
             };
+            
+            // ▼▼▼ 修正: データがない場合は新規作成(set)でリカバリする処理を追加 ▼▼▼
             const saveToDB = async (id, field, value) => {
-                try { await db.collection("campaigns").doc(id).update({ [field]: value }); } 
-                catch(e) { console.error("Save failed", e); }
+                try { 
+                    await db.collection("campaigns").doc(id).update({ [field]: value }); 
+                } catch(e) { 
+                    console.error("Update failed, trying set merge...", e);
+                    // updateが失敗した場合（ドキュメントがない等）、mergeで保存を試みる
+                    try {
+                        await db.collection("campaigns").doc(id).set({ [field]: value }, { merge: true });
+                    } catch (e2) {
+                        alert("保存に失敗しました: " + e2.message);
+                    }
+                }
             };
             const handleRequestLocalUpdate = (id, field, value) => {
                 setRequests(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
             };
             const saveRequestToDB = async (id, field, value) => {
-                try { await db.collection("requests").doc(id).update({ [field]: value }); } 
-                catch(e) { console.error("Save failed", e); }
+                try { 
+                    await db.collection("requests").doc(id).update({ [field]: value }); 
+                } catch(e) { 
+                    console.error("Update failed, trying set merge...", e);
+                    try {
+                        await db.collection("requests").doc(id).set({ [field]: value }, { merge: true });
+                    } catch (e2) {
+                        alert("保存に失敗しました: " + e2.message);
+                    }
+                }
             };
+            // ▲▲▲▲▲▲
 
-            // ▼▼▼ 修正: 最終形態２.htmlの内容を白/青テーマ用に配色のみ変更して完全復元 ▼▼▼
             const docContent = {
                 terms: (
                     <div className="space-y-8">
@@ -278,16 +297,53 @@
                     </div>
                 )
             };
-            // ▲▲▲▲▲▲
 
+            // ▼▼▼ 修正: 画像の圧縮・リサイズ処理（エラー対策） ▼▼▼
             const handleImageUpload = (e, callback) => {
                 const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => callback(reader.result);
-                    reader.readAsDataURL(file);
-                }
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (readerEvent) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_SIZE = 800; // 長辺を800pxに制限
+
+                        if (width > height) {
+                            if (width > MAX_SIZE) {
+                                height *= MAX_SIZE / width;
+                                width = MAX_SIZE;
+                            }
+                        } else {
+                            if (height > MAX_SIZE) {
+                                width *= MAX_SIZE / height;
+                                height = MAX_SIZE;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // JPEG形式、品質0.7で圧縮
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        // サイズチェック（念のため）
+                        if (dataUrl.length > 1048487) {
+                            alert("画像サイズが大きすぎて圧縮しても送信できませんでした。別の画像を選択してください。");
+                        } else {
+                            callback(dataUrl);
+                        }
+                    };
+                    img.src = readerEvent.target.result;
+                };
+                reader.readAsDataURL(file);
             };
+            // ▲▲▲▲▲▲
 
             const extractImageFromCode = (code) => {
                 if (!code || typeof code !== 'string') return null;
@@ -344,27 +400,36 @@
                 if(!applyForm.team || !applyForm.email || !applyForm.contactName || !applyForm.address || !applyForm.phone) return alert("必須項目を入力してください");
                 if(!applyAgreed) return alert("規約への同意が必要です");
                 
-                await db.collection("requests").add({ 
-                    team: applyForm.team,
-                    email: applyForm.email,
-                    itemUrl: applyForm.itemUrl, 
-                    teamUrl: applyForm.teamUrl,
-                    snsUrl: applyForm.snsUrl,
-                    description: applyForm.description,
-                    image: applyForm.image,
-                    teamImage: applyForm.teamImage, 
-                    contactName: applyForm.contactName,
-                    address: applyForm.address,
-                    phone: applyForm.phone,
-                    estimatedPrice: 0, 
-                    status: "pending", 
-                    date: new Date().toLocaleDateString('ja-JP') 
-                });
+                setIsProcessing(true); // 送信中ロック
 
-                alert("リクエストを受け付けました。\n審査結果をお待ちください。");
-                localStorage.removeItem("ms_applyForm");
-                setApplyForm({ team: "", email: "", itemUrl: "", teamUrl: "", snsUrl: "", description: "", image: null, teamImage: null, contactName: "", address: "", phone: "" });
-                setView('home');
+                try {
+                    await db.collection("requests").add({ 
+                        team: applyForm.team,
+                        email: applyForm.email,
+                        itemUrl: applyForm.itemUrl, 
+                        teamUrl: applyForm.teamUrl,
+                        snsUrl: applyForm.snsUrl,
+                        description: applyForm.description,
+                        image: applyForm.image,
+                        teamImage: applyForm.teamImage, 
+                        contactName: applyForm.contactName,
+                        address: applyForm.address,
+                        phone: applyForm.phone,
+                        estimatedPrice: 0, 
+                        status: "pending", 
+                        date: new Date().toLocaleDateString('ja-JP') 
+                    });
+
+                    alert("リクエストを受け付けました。\n審査結果をお待ちください。");
+                    localStorage.removeItem("ms_applyForm");
+                    setApplyForm({ team: "", email: "", itemUrl: "", teamUrl: "", snsUrl: "", description: "", image: null, teamImage: null, contactName: "", address: "", phone: "" });
+                    setView('home');
+                } catch (error) {
+                    console.error("Submit error", error);
+                    alert("送信に失敗しました: " + error.message);
+                } finally {
+                    setIsProcessing(false);
+                }
             };
             
             const approveRequest = async (req) => {
@@ -389,7 +454,6 @@
                 const finalAmount = parseInt(selectedAmount, 10);
                 if (!finalAmount || isNaN(finalAmount) || finalAmount < 1) {
                      alert(`エラー: 金額が 0円 または不正です`);
-                     setIsProcessing(false);
                      return;
                 }
                 alert(`【確認】¥${finalAmount} の決済を開始します。`);
@@ -550,6 +614,7 @@
                                     </div>
                                 )}
 
+                                {/* リクエスト管理: 写真編集機能付き */}
                                 {adminTab === 'requests' && <div className="grid gap-6">{requests.map(req => (
                                     <div key={req.id} className="glass-panel p-6 md:p-8 rounded-[2rem] grid grid-cols-1 md:grid-cols-3 gap-8 border-l-8 border-blue-600">
                                         <div className="space-y-4">
@@ -634,6 +699,7 @@
                                     </div>
                                 ))}</div>}
 
+                                {/* 支援編集: 写真編集機能付き */}
                                 {adminTab === 'campaigns' && <div className="grid gap-4">{campaigns.map(c => (
                                     <div key={c.id} className="glass-panel p-6 rounded-3xl flex flex-col md:flex-row gap-6 items-start">
                                         <div className="w-full md:w-48 shrink-0 space-y-4">
@@ -1067,7 +1133,13 @@
                                         <p className="text-xs text-slate-500">利用規約および虚偽申請でないことに同意します。</p>
                                     </div>
                                     <p className="text-[10px] text-center text-slate-400">※発送先情報はDBには保存されず、管理者へのメールでのみ送信されます。</p>
-                                    <button onClick={submitRequest} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 disabled:opacity-50 transition" disabled={!applyAgreed}>送信</button>
+                                    <button 
+                                        onClick={isProcessing ? null : submitRequest} 
+                                        disabled={isProcessing || !applyAgreed}
+                                        className={`w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl transition flex justify-center items-center ${isProcessing || !applyAgreed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                                    >
+                                        {isProcessing ? <div className="loading-spinner border-white border-t-blue-600 w-6 h-6"></div> : "送信"}
+                                    </button>
                                 </div>
                             </div>
                         ) : null}
