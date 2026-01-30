@@ -145,12 +145,12 @@
         const ProgressBar = ({ current, target }) => {
             const percent = Math.min((current / target) * 100, 100);
             return (
-                <div className="w-full mt-3">
+                <div className="w-full mt-2">
                     <div className="flex justify-between items-end mb-1">
-                        <span className="text-[10px] text-slate-400 font-bold">{Math.floor(percent)}%</span>
-                        <span className="text-[10px] text-slate-400 font-bold">Goal</span>
+                        <span className="text-[9px] md:text-[10px] text-slate-400 font-bold">{Math.floor(percent)}%</span>
+                        <span className="text-[9px] md:text-[10px] text-slate-400 font-bold">Goal</span>
                     </div>
-                    <div className="meter-bg">
+                    <div className="meter-bg h-[6px] md:h-[8px]">
                         <div className="meter-fill" style={{ width: `${percent}%` }}></div>
                     </div>
                 </div>
@@ -226,7 +226,6 @@
                 if (!isAdminMode) setView('home'); 
             }, [isAdminMode]);
 
-            // DB保存処理（エラー時リカバリ機能付き）
             const handleLocalUpdate = (id, field, value) => {
                 setCampaigns(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
             };
@@ -242,7 +241,6 @@
                 catch(e) { console.error("Update failed", e); try { await db.collection("requests").doc(id).set({ [field]: value }, { merge: true }); } catch (e2) { alert("保存失敗: " + e2.message); } }
             };
 
-            // 画像圧縮処理 (500px / 0.4 / 350KB制限)
             const handleImageUpload = (e, callback) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -280,7 +278,7 @@
                 privacy: (
                     <div className="space-y-8">
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">1. 個人情報の収集</h3><p>本サービスでは、決済処理および商品配送、活動報告のために、以下の個人情報を取得します。</p><ul className="list-disc pl-5 mt-2 text-slate-600"><li>氏名、メールアドレス、電話番号、住所（配送先のみ）、クレジットカード情報（決済代行業者のみが保持）</li></ul></div>
-                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">2. 個人情報の利用目的</h3><p>取得した情報は、以下の目的以外には利用しません。</p><ul className="list-disc pl-5 mt-2 text-slate-600"><li>支援物品の購入および配送業務</li><li>決済手続きおよび領収書等の発行</li><li>サービスに関する重要なお知らせ、活動報告の送付</li></ul></div>
+                        <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">2. 個人情報の利用目的</h3><p>取得した情報は、以下の目的以外には利用しません。</p><ul className="list-disc pl-5 mt-2 text-slate-600"><li>支援物品の購入および配送業務</li><li>決済手続きおよび領収書等の発行</li><li>サービスに関する重要のお知らせ、活動報告の送付</li></ul></div>
                         <div><h3 className="text-blue-900 font-bold border-b border-slate-200 pb-2 mb-4 text-lg">3. 第三者提供</h3><p>法令に基づく場合を除き、利用者の同意なく第三者に個人情報を提供することはありません。ただし、支援先のチームに対しては、支援者リストとして氏名（ニックネーム）のみ開示される場合があります。</p></div>
                     </div>
                 ),
@@ -382,7 +380,6 @@
                 }
             };
 
-            // ▼▼▼ 修正: 活動報告の投稿処理（DB連携） ▼▼▼
             const submitReport = async () => {
                 if(!reportForm.team || !reportForm.content) return alert("必須項目（チーム名・本文）を入力してください");
                 setIsProcessing(true);
@@ -393,7 +390,7 @@
                     });
                     localStorage.removeItem("ms_reportForm");
                     setReportForm({ team: "", title: "", content: "", image: null });
-                    alert("活動報告を公開しました！\nトップページの「活動報告」タブから確認できます。");
+                    alert("活動報告を公開しました！");
                 } catch(e) {
                     console.error(e);
                     alert("投稿に失敗しました: " + e.message);
@@ -401,7 +398,6 @@
                     setIsProcessing(false);
                 }
             };
-            // ▲▲▲▲▲▲
 
             const deleteDoc = async (col, id) => { if(confirm("削除しますか？")) await db.collection(col).doc(id).delete(); };
             const createDemoOrder = async () => { 
@@ -412,6 +408,28 @@
                     description: "デモデータ", contactName: "デモ", address: "東京", phone: "09000000000", email: "demo@example.com"
                 });
                 alert("作成しました");
+            };
+
+            const CampaignCard = ({ c }) => {
+                const target = calcTarget(c.price);
+                const isGoal = c.current >= target;
+                return (
+                    <div className="campaign-card glass-panel rounded-[1rem] md:rounded-[2.5rem] p-1.5 md:p-2 border border-white relative cursor-pointer overflow-hidden" onClick={()=>{setSelectedCampaign(c); setView('detail'); setSupportStep(1); setCustomAmountInput(""); window.scrollTo(0,0);}}>
+                        {isGoal && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-[1rem] md:rounded-[2.5rem]"><div className="goal-stamp border-4 md:border-8 border-pink-500 text-pink-500 text-3xl md:text-6xl font-black p-2 md:p-4 rounded-xl rotate-[-15deg]">GOAL!!</div></div>}
+                        <div className="aspect-[16/10] md:aspect-video bg-slate-100 rounded-[0.75rem] md:rounded-[2rem] overflow-hidden m-0.5 md:m-2 relative shadow-inner">
+                            <img src={c.teamImage || c.image} className="w-full h-full object-cover"/>
+                            <div className="absolute bottom-0 left-0 right-0 p-2 md:p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                <span className="bg-white text-blue-900 px-1.5 py-0.5 rounded-full text-[8px] md:text-[10px] font-black">{c.team}</span>
+                            </div>
+                        </div>
+                        <div className="p-2 md:p-6">
+                            <h3 className="text-[11px] md:text-xl font-black italic text-slate-800 mb-1 md:mb-2 line-clamp-1">{c.name}</h3>
+                            <div className="flex items-center gap-1 mb-1 text-[8px] md:text-xs font-bold text-slate-400"><span className="text-blue-500">👤</span> {c.supporters || 0}人</div>
+                            <div className="flex justify-between items-end"><div><p className="text-[7px] md:text-[10px] text-slate-400">現在</p><span className="text-[11px] md:text-2xl font-black text-blue-600">¥{c.current.toLocaleString()}</span></div><div className="text-right"><p className="text-[7px] md:text-[10px] text-slate-400">目標</p><span className="text-[8px] md:text-xs font-black text-slate-500">/¥{target.toLocaleString()}</span></div></div>
+                            <ProgressBar current={c.current} target={target} />
+                        </div>
+                    </div>
+                );
             };
 
             return (
@@ -430,10 +448,10 @@
                         </div>
                     )}
 
-                    <nav className="h-20 md:h-24 flex items-center justify-between px-4 md:px-12 sticky top-0 bg-[#f0f4f8]/90 backdrop-blur-xl z-50 border-b border-white/40 gap-4 md:gap-8">
-                        <div className="flex items-center gap-2 md:gap-3 cursor-pointer shrink-0" onClick={() => {setView('home'); setActiveTab('top'); setIsAdminMode(false);}}>
-                            <div className="bg-blue-600 w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center italic font-black text-white shadow-lg text-lg md:text-xl">S</div>
-                            <span className="font-black text-xl md:text-2xl tracking-tighter uppercase italic text-slate-900">MySUPPORTER <span className="text-[10px] text-blue-600 ml-2">Final</span></span>
+                    <nav className="h-16 md:h-24 flex items-center justify-between px-4 md:px-12 sticky top-0 bg-[#f0f4f8]/90 backdrop-blur-xl z-50 border-b border-white/40 gap-4">
+                        <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={() => {setView('home'); setActiveTab('top'); setIsAdminMode(false);}}>
+                            <div className="bg-blue-600 w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center italic font-black text-white shadow-lg text-lg">S</div>
+                            <span className="font-black text-lg md:text-2xl tracking-tighter uppercase italic text-slate-900">MySUPPORTER</span>
                         </div>
                         {!isAdminMode && (
                             <div className="hidden md:block flex-1 max-w-xl relative border border-slate-200 bg-white rounded-2xl transition-all overflow-hidden focus-within:border-blue-500 shadow-sm">
@@ -448,20 +466,20 @@
                                 </button>
                             ))}
                         </div>
-                        <div className="flex gap-2 md:gap-4">
-                            {!isAdminMode && <button onClick={()=>setView('apply')} className="text-[10px] font-black uppercase border border-blue-200 bg-white text-blue-900 px-4 md:px-6 py-2 rounded-full hover:bg-blue-600 hover:text-white transition shadow-sm">掲載リクエスト</button>}
+                        <div className="flex gap-2">
+                            {!isAdminMode && <button onClick={()=>setView('apply')} className="text-[9px] md:text-[10px] font-black uppercase border border-blue-200 bg-white text-blue-900 px-3 md:px-6 py-1.5 md:py-2 rounded-full hover:bg-blue-600 hover:text-white transition">掲載申請</button>}
                             {isAdminMode && <button onClick={handleLogout} className="text-[10px] font-black bg-slate-800 text-white px-4 md:px-6 py-2 rounded-full">ログアウト</button>}
                         </div>
                     </nav>
 
                     {!isAdminMode && view === 'home' && (
-                        <div className="md:hidden sticky top-20 z-40 bg-[#f0f4f8]/95 border-b border-white/40 backdrop-blur-xl overflow-x-auto no-scrollbar">
-                            <div className="flex px-4 py-3 gap-3 min-w-max">
+                        <div className="md:hidden sticky top-16 z-40 bg-[#f0f4f8]/95 border-b border-white/40 backdrop-blur-xl overflow-x-auto no-scrollbar shadow-sm">
+                            <div className="flex px-4 py-2 gap-2 min-w-max">
                                 {['campaigns', 'about', 'howitworks', 'thanks'].map(tab => (
                                     <button key={tab} onClick={() => {setView('home'); setActiveTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' });}} 
-                                        className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap 
-                                        ${activeTab === tab ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-500 border border-slate-200'}`}>
-                                        {tab === 'about' ? 'MySUPPORTERとは' : tab === 'campaigns' ? '支援一覧' : tab === 'howitworks' ? 'ご利用フロー' : '活動報告'}
+                                        className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest transition-all whitespace-nowrap 
+                                        ${activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                                        {tab === 'about' ? 'とは' : tab === 'campaigns' ? '支援一覧' : tab === 'howitworks' ? 'フロー' : '活動報告'}
                                     </button>
                                 ))}
                             </div>
@@ -469,7 +487,6 @@
                     )}
 
                     <main className="flex-grow">
-                        {/* ▼▼▼ 管理者ダッシュボード (機能連携確認済み) ▼▼▼ */}
                         {view === 'admin' && isAdminMode ? (
                             <div className="max-w-7xl mx-auto p-4 md:p-12 fade-in">
                                 <div className="flex justify-between items-end border-b border-slate-300 pb-4 md:pb-8 mb-8">
@@ -483,7 +500,6 @@
                                         </button>
                                     ))}
                                 </div>
-
                                 {adminTab === 'dashboard' && (
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                                         <div className="glass-panel p-8 rounded-[2rem] border-l-8 border-blue-600">
@@ -500,18 +516,6 @@
                                         </div>
                                     </div>
                                 )}
-
-                                {adminTab === 'monitor' && ( /* 進捗一覧（旧デザイン踏襲） */
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {campaigns.map(c => (
-                                            <div key={c.id} className="glass-panel p-6 rounded-2xl border-l-4 border-blue-500">
-                                                <h3 className="font-bold">{c.name}</h3>
-                                                <ProgressBar current={c.current} target={calcTarget(c.price)} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
                                 {adminTab === 'requests' && <div className="grid gap-6">{requests.length === 0 ? <p className="text-center text-slate-400 py-10">リクエストはありません</p> : requests.map(req => (
                                     <div key={req.id} className="glass-panel p-6 md:p-8 rounded-[2rem] grid grid-cols-1 md:grid-cols-3 gap-8 border-l-8 border-blue-600">
                                         <div className="space-y-4">
@@ -550,7 +554,7 @@
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500">商品名 (承認後表示)</label>
-                                                <input className="input-field text-sm" placeholder="商品名を入力 (例: 公式試合球)" value={req.name||''} onChange={e => handleRequestLocalUpdate(req.id, 'name', e.target.value)} onBlur={e => saveRequestToDB(req.id, 'name', e.target.value)} />
+                                                <input className="input-field text-sm" placeholder="商品名を入力" value={req.name||''} onChange={e => handleRequestLocalUpdate(req.id, 'name', e.target.value)} onBlur={e => saveRequestToDB(req.id, 'name', e.target.value)} />
                                             </div>
                                             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100"><label className="text-[10px] font-bold text-blue-600">承認金額 (¥)</label>
                                                 <input type="number" className="input-field text-xl" value={req.estimatedPrice||''} onChange={e => handleRequestLocalUpdate(req.id, 'estimatedPrice', parseInt(e.target.value))} onBlur={e => saveRequestToDB(req.id, 'estimatedPrice', parseInt(e.target.value))} />
@@ -563,7 +567,6 @@
                                         </div>
                                     </div>
                                 ))}</div>}
-
                                 {adminTab === 'campaigns' && <div className="grid gap-4">{campaigns.map(c => (
                                     <div key={c.id} className="glass-panel p-6 rounded-3xl flex flex-col md:flex-row gap-6 items-start border-l-4 border-green-500">
                                         <div className="w-full md:w-48 shrink-0 space-y-4">
@@ -599,30 +602,9 @@
                                                 <textarea className="input-field py-2 px-2 text-xs h-16" value={c.description||''} onChange={e=>handleLocalUpdate(c.id, 'description', e.target.value)} onBlur={e=>saveToDB(c.id, 'description', e.target.value)}></textarea>
                                             </div>
                                         </div>
-                                        <button onClick={()=>deleteDoc("campaigns", c.id)} className="text-xs font-black border border-red-200 text-red-500 px-4 py-2 rounded-lg hover:bg-red-50">この案件を削除</button>
+                                        <button onClick={()=>deleteDoc("campaigns", c.id)} className="text-xs font-black border border-red-200 text-red-500 px-4 py-2 rounded-lg hover:bg-red-50">削除</button>
                                     </div>
                                 ))}</div>}
-
-                                {adminTab === 'orders' && <div className="space-y-6">{campaigns.filter(c => c.current >= calcTarget(c.price) && c.status !== 'ordered').map(c => (
-                                    <div key={c.id} className="glass-panel p-6 md:p-8 rounded-[2rem] flex flex-col md:flex-row items-center gap-8 border-l-8 border-green-500">
-                                        <div className="flex-grow w-full">
-                                            <span className="bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded">達成済み</span>
-                                            <h3 className="text-xl font-black italic mt-2 text-slate-800">{c.team} - {c.name}</h3>
-                                            <div className="mt-4 bg-white p-4 rounded-xl text-sm border border-slate-200 shadow-sm">
-                                                <h4 className="font-bold text-blue-600 mb-2">📦 発送先情報 (管理者のみ表示)</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    <p><span className="text-slate-500">お名前:</span> {c.contactName || '未記入'}</p>
-                                                    <p><span className="text-slate-500">電話番号:</span> {c.phone || '未記入'}</p>
-                                                    <p className="md:col-span-2"><span className="text-slate-500">住所:</span> {c.address || '未記入'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-4 text-xs text-slate-500 mt-2"><a href={c.itemUrl} target="_blank" className="underline text-blue-500">商品ページ</a><span>連絡先: {c.email}</span></div>
-                                        </div>
-                                        <button onClick={()=>updateOrderStatus(c, 'ordered')} className="w-full md:w-auto px-6 py-3 bg-green-500 text-white rounded-xl text-xs font-black hover:bg-green-600 shadow-lg">発注完了</button>
-                                    </div>
-                                ))}</div>}
-
-                                {/* ▼▼▼ 修正: 活動報告作成画面の復元 ▼▼▼ */}
                                 {adminTab === 'reports' && (
                                     <div className="space-y-8">
                                         <div className="glass-panel p-6 md:p-10 rounded-[3rem] border border-blue-500/20">
@@ -640,9 +622,8 @@
                                             </div>
                                             <button onClick={isProcessing ? null : submitReport} disabled={isProcessing} className="w-full mt-8 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700">{isProcessing ? "処理中..." : "公開する"}</button>
                                         </div>
-
                                         <div className="glass-panel p-6 md:p-10 rounded-[3rem]">
-                                            <h3 className="text-lg font-black italic mb-8 uppercase text-slate-700">投稿済みレポート管理</h3>
+                                            <h3 className="text-lg font-black italic mb-8 uppercase text-slate-700">管理</h3>
                                             <div className="space-y-4">
                                                 {reports.map(r => (
                                                     <div key={r.id} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
@@ -651,125 +632,54 @@
                                                             <h4 className="font-bold text-slate-800">{r.title}</h4>
                                                             <p className="text-xs text-slate-500">{r.date} - {r.team}</p>
                                                         </div>
-                                                        <button onClick={() => deleteDoc('reports', r.id)} className="text-xs font-black text-red-500 border border-red-500 px-3 py-1 rounded hover:bg-red-500 hover:text-white transition">
-                                                            削除
-                                                        </button>
+                                                        <button onClick={() => deleteDoc('reports', r.id)} className="text-xs font-black text-red-500 border border-red-500 px-3 py-1 rounded">削除</button>
                                                     </div>
                                                 ))}
-                                                {reports.length === 0 && <p className="text-sm text-slate-500">投稿されたレポートはありません。</p>}
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                                {/* ▲▲▲▲▲▲ */}
-
-                                {adminTab === 'revenue' && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="glass-panel p-8 rounded-[2rem] border-t-4 border-blue-600"><p className="text-xs font-black text-slate-500 mb-2">総支援額</p><p className="text-4xl font-black italic text-slate-800">¥{stats.totalPayment.toLocaleString()}</p></div>
-                                    <div className="glass-panel p-8 rounded-[2rem]"><p className="text-xs font-black text-slate-500 mb-2">手数料(10%)</p><p className="text-4xl font-black italic text-blue-500">¥{(stats.stripeFee + stats.adminFee).toLocaleString()}</p></div>
-                                    <div className="glass-panel p-8 rounded-[2rem]"><p className="text-xs font-black text-slate-500 mb-2">送料プール</p><p className="text-4xl font-black italic text-slate-400">¥{stats.shipping.toLocaleString()}</p></div>
-                                    <div className="glass-panel p-8 rounded-[2rem] col-span-1 md:col-span-3"><h3 className="text-sm font-black text-slate-500 mb-4">詳細内訳</h3><div className="grid grid-cols-2 gap-8"><div><p className="text-xs text-slate-500">Stripe手数料(3.6%)</p><p className="text-xl font-bold text-slate-700">¥{stats.stripeFee.toLocaleString()}</p></div><div><p className="text-xs text-slate-500">事務手数料(6.4%)</p><p className="text-xl font-bold text-slate-700">¥{stats.adminFee.toLocaleString()}</p></div></div></div>
-                                </div>}
                             </div>
                         ) : view === 'home' ? (
                             <>
-                                {/* Top: ヒーロービジョン + 支援募集一覧 */}
                                 {activeTab === 'top' && (
                                     <>
-                                        <section className="pt-24 pb-12 md:pt-32 md:pb-24 px-4 md:px-8 text-center fade-in">
-                                            <h1 className="text-5xl md:text-[9rem] font-black italic tracking-tighter uppercase leading-[0.9] text-slate-900 drop-shadow-sm">
+                                        <section className="pt-8 pb-4 md:pt-32 md:pb-24 px-4 md:px-8 text-center fade-in">
+                                            <h1 className="text-4xl md:text-[9rem] font-black italic tracking-tighter uppercase leading-[0.9] text-slate-900">
                                                 Support Your<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-400">Dream Team.</span>
                                             </h1>
-                                            <p className="text-lg md:text-3xl font-black text-slate-500 mt-6 md:mt-8 tracking-widest">
-                                                そのワンクリックが、未来のアスリートの力になる。
+                                            <p className="text-sm md:text-3xl font-black text-slate-500 mt-4 md:mt-8 tracking-wider">
+                                                そのワンクリックが、力になる。
                                             </p>
-                                            <div className="w-16 h-1 md:w-24 md:h-2 bg-gradient-to-r from-blue-600 to-cyan-400 mx-auto mt-12 md:mt-16 rounded-full"></div>
                                         </section>
-
-                                        {/* List */}
-                                        <div className="max-w-7xl mx-auto px-2 md:px-8 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 pb-32">
-                                            {filteredCampaigns.map(c => {
-                                                const target = calcTarget(c.price);
-                                                const isGoal = c.current >= target;
-
-                                                return (
-                                                    <div key={c.id} className="campaign-card glass-panel rounded-[1.5rem] md:rounded-[2.5rem] p-2 border border-white relative cursor-pointer overflow-hidden" onClick={()=>{setSelectedCampaign(c); setView('detail'); setSupportStep(1); setCustomAmountInput(""); window.scrollTo(0,0);}}>
-                                                        {isGoal && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-[2.5rem]"><div className="goal-stamp border-8 border-pink-500 text-pink-500 text-6xl font-black p-4 rounded-xl rotate-[-15deg]">GOAL!!</div></div>}
-                                                        
-                                                        {/* メイン: チーム画像 */}
-                                                        <div className="aspect-video bg-slate-100 rounded-[1rem] md:rounded-[2rem] overflow-hidden m-1 md:m-2 relative shadow-inner">
-                                                            <img src={c.teamImage || c.image} className="w-full h-full object-cover"/>
-                                                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                                                                <span className="bg-white text-blue-900 px-2 py-0.5 rounded-full text-[10px] font-black">{c.team}</span>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div className="p-3 md:p-6">
-                                                            <h3 className="text-sm md:text-xl font-black italic text-slate-800 mt-2 mb-2 line-clamp-1">{c.name}</h3>
-                                                            <div className="flex items-center gap-2 mb-2 text-[10px] md:text-xs font-bold text-slate-400"><span className="text-blue-500">👤</span> {c.supporters || 0}人が支援中</div>
-                                                            <div className="flex justify-between items-end"><div><p className="text-[8px] md:text-[10px] text-slate-400">現在</p><span className="text-sm md:text-2xl font-black text-blue-600">¥{c.current.toLocaleString()}</span></div><div className="text-right"><p className="text-[8px] md:text-[10px] text-slate-400">目標</p><span className="text-[10px] md:text-xs font-black text-slate-500">/ ¥{target.toLocaleString()}</span></div></div>
-                                                            <ProgressBar current={c.current} target={target} />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                        <div className="max-w-7xl mx-auto px-2 md:px-8 grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-8 pb-20">
+                                            {filteredCampaigns.map(c => <CampaignCard key={c.id} c={c} />)}
                                         </div>
                                     </>
                                 )}
 
-                                {/* Campaigns Tab */}
                                 {activeTab === 'campaigns' && (
-                                    <div className="max-w-7xl mx-auto px-2 md:px-8 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 py-32 fade-in">
-                                        {filteredCampaigns.map(c => {
-                                            const target = calcTarget(c.price);
-                                            const isGoal = c.current >= target;
-
-                                            return (
-                                                <div key={c.id} className="campaign-card glass-panel rounded-[1.5rem] md:rounded-[2.5rem] p-2 border border-white relative cursor-pointer overflow-hidden" onClick={()=>{setSelectedCampaign(c); setView('detail'); setSupportStep(1); setCustomAmountInput(""); window.scrollTo(0,0);}}>
-                                                    {isGoal && <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-[2.5rem]"><div className="goal-stamp border-8 border-pink-500 text-pink-500 text-6xl font-black p-4 rounded-xl rotate-[-15deg]">GOAL!!</div></div>}
-                                                    
-                                                    {/* メイン: チーム写真 */}
-                                                    <div className="aspect-video bg-slate-100 rounded-[1rem] md:rounded-[2rem] overflow-hidden m-1 md:m-2 relative shadow-inner">
-                                                        <img src={c.teamImage || c.image} className="w-full h-full object-cover"/>
-                                                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                                                            <span className="bg-white text-blue-900 px-2 py-0.5 rounded-full text-[10px] font-black">{c.team}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-3 md:p-6">
-                                                        <h3 className="text-sm md:text-xl font-black italic text-slate-800 mt-2 mb-2 line-clamp-1">{c.name}</h3>
-                                                        <div className="flex items-center gap-2 mb-2 text-[10px] md:text-xs font-bold text-slate-400"><span className="text-blue-500">👤</span> {c.supporters || 0}人が支援中</div>
-                                                        <div className="flex justify-between items-end"><div><p className="text-[8px] md:text-[10px] text-slate-400">現在</p><span className="text-sm md:text-2xl font-black text-blue-600">¥{c.current.toLocaleString()}</span></div><div className="text-right"><p className="text-[8px] md:text-[10px] text-slate-400">目標</p><span className="text-[10px] md:text-xs font-black text-slate-500">/ ¥{target.toLocaleString()}</span></div></div>
-                                                        <ProgressBar current={c.current} target={target} />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                    <div className="max-w-7xl mx-auto px-2 md:px-8 grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-8 py-6 md:py-32 fade-in">
+                                        {filteredCampaigns.map(c => <CampaignCard key={c.id} c={c} />)}
                                     </div>
                                 )}
 
                                 {activeTab === 'about' && (
-                                    <div className="max-w-6xl mx-auto py-12 md:py-24 px-2 md:px-8 fade-in">
-                                        <div className="text-center mb-8 md:mb-20">
-                                            <h2 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-400 mb-4 md:mb-6">
-                                                Why <span className="text-blue-600">MySUPPORTER?</span>
-                                            </h2>
-                                            <p className="text-base md:text-2xl font-bold text-slate-500 tracking-wider">
-                                                「不透明」な寄付を終わらせる。<br />モノが届く、新しい応援のカタチ。
-                                            </p>
-                                        </div>
-                                        
-                                        <div className="hidden md:grid grid-cols-3 gap-6">
+                                    <div className="max-w-6xl mx-auto py-8 md:py-24 px-4 md:px-8 fade-in text-center">
+                                        <h2 className="text-3xl md:text-7xl font-black italic uppercase tracking-tighter text-blue-600 mb-4">Why MySUPPORTER?</h2>
+                                        <p className="text-sm md:text-2xl font-bold text-slate-500 mb-8 md:mb-12">「不透明」な寄付を終わらせる。<br />モノが届く、新しい応援のカタチ。</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                                             {[
-                                                {title: "100%の透明性", text: "支援金は指定された「物品購入」のみに使われます。", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"},
-                                                {title: "モノで届く", text: "現金ではなく新品の用具が届く喜びが、チームを支えます。", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"},
-                                                {title: "活動が見える", text: "チームから写真付きの活動報告が届き、成果を実感できます。", icon: "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"}
+                                                {title: "100%の透明性", text: "支援金は指定された物品購入にのみ使われます。", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"},
+                                                {title: "モノで届く", text: "現金ではなく新品の用具が届き、活動を支えます。", icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"},
+                                                {title: "活動が見える", text: "チームから写真付きの報告が届き、成果を実感できます。", icon: "M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15"}
                                             ].map((f, i) => (
-                                                <div key={i} className="glass-panel p-8 rounded-[2.5rem] hover:bg-white transition duration-300 group">
-                                                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-blue-600">
-                                                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} /></svg>
+                                                <div key={i} className="glass-panel p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] text-left">
+                                                    <div className="w-10 h-10 md:w-16 md:h-16 bg-blue-100 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 text-blue-600">
+                                                        <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={f.icon} /></svg>
                                                     </div>
-                                                    <h4 className="text-xl font-black italic text-slate-800 mb-3">{f.title}</h4>
-                                                    <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                                                    <h4 className="text-base md:text-xl font-black italic text-slate-800 mb-2">{f.title}</h4>
+                                                    <p className="text-xs md:text-sm text-slate-500">{f.text}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -777,69 +687,63 @@
                                 )}
                                 
                                 {activeTab === 'howitworks' && (
-                                    <div className="max-w-6xl mx-auto py-12 md:py-24 px-4 md:px-8 fade-in space-y-24">
+                                    <div className="max-w-6xl mx-auto py-6 md:py-24 px-4 md:px-8 fade-in space-y-8 md:space-y-24">
                                         <div>
-                                            <div className="text-center mb-12">
-                                                <span className="text-blue-600 font-black tracking-widest text-xs uppercase mb-2 block">For Teams</span>
-                                                <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-slate-900">チームの方へ</h2>
-                                                <p className="text-slate-500 font-bold mt-4">必要な用具をリクエストして、支援を募りましょう</p>
+                                            <div className="text-center mb-6 md:mb-12">
+                                                <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-slate-900">チームの方へ</h2>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
                                                 {[
-                                                    {step: "01", title: "商品選定", text: "Amazonや楽天でチームに必要な用具を選び、商品URLをコピーします。"},
-                                                    {step: "02", title: "掲載リクエスト", text: "専用フォームからチーム情報と商品URLを送信し、掲載を申請します。"},
-                                                    {step: "03", title: "受け取り", text: "目標金額に達すると、事務局が代理購入し、チームに商品が届きます。"}
+                                                    {step: "01", title: "商品選定", text: "Amazonや楽天でURLをコピー"},
+                                                    {step: "02", title: "リクエスト", text: "専用フォームから掲載を申請"},
+                                                    {step: "03", title: "受け取り", text: "目標達成で商品がチームに届く"}
                                                 ].map((s, i) => (
-                                                    <div key={i} className="glass-panel p-8 rounded-[2rem] relative overflow-hidden group hover:border-blue-200 transition">
-                                                        <div className="text-7xl font-black italic text-slate-100 absolute -top-2 -right-2">{s.step}</div>
-                                                        <h3 className="text-xl font-black italic mb-3 text-blue-600">{s.title}</h3>
-                                                        <p className="text-sm text-slate-500 font-bold leading-relaxed">{s.text}</p>
+                                                    <div key={i} className="glass-panel p-4 md:p-8 rounded-[1rem] md:rounded-[2rem] relative overflow-hidden">
+                                                        <div className="text-4xl md:text-7xl font-black italic text-slate-100 absolute -top-1 md:-top-2 -right-1 md:-right-2">{s.step}</div>
+                                                        <h3 className="text-sm md:text-xl font-black italic mb-1 md:mb-3 text-blue-600 relative z-10">{s.title}</h3>
+                                                        <p className="text-[11px] md:text-sm text-slate-500 font-bold relative z-10">{s.text}</p>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-
                                         <div>
-                                            <div className="text-center mb-12">
-                                                <span className="text-blue-600 font-black tracking-widest text-xs uppercase mb-2 block">For Supporters</span>
-                                                <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-slate-900">サポーターの方へ</h2>
-                                                <p className="text-slate-500 font-bold mt-4">未来のアスリートを、あなたの支援で支えましょう</p>
+                                            <div className="text-center mb-6 md:mb-12">
+                                                <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-slate-900">サポーターの方へ</h2>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
                                                 {[
-                                                    {step: "01", title: "チームを探す", text: "応援したいチームや、共感できるプロジェクトを一覧から探します。"},
-                                                    {step: "02", title: "支援する", text: "クレジットカードで決済。少額からでも、全額支援でも可能です。"},
-                                                    {step: "03", title: "活動報告", text: "支援したチームから、感謝のメッセージや活動報告が届きます。"}
+                                                    {step: "01", title: "チームを探す", text: "応援したいチームを一覧から選ぶ"},
+                                                    {step: "02", title: "支援する", text: "少額からでもクレジットカードで支援"},
+                                                    {step: "03", title: "活動報告", text: "チームから感謝の報告が届く"}
                                                 ].map((s, i) => (
-                                                    <div key={i} className="glass-panel p-8 rounded-[2rem] relative overflow-hidden group hover:border-blue-200 transition">
-                                                        <div className="text-7xl font-black italic text-slate-100 absolute -top-2 -right-2">{s.step}</div>
-                                                        <h3 className="text-xl font-black italic mb-3 text-blue-600">{s.title}</h3>
-                                                        <p className="text-sm text-slate-500 font-bold leading-relaxed">{s.text}</p>
+                                                    <div key={i} className="glass-panel p-4 md:p-8 rounded-[1rem] md:rounded-[2rem] relative overflow-hidden">
+                                                        <div className="text-4xl md:text-7xl font-black italic text-slate-100 absolute -top-1 md:-top-2 -right-1 md:-right-2">{s.step}</div>
+                                                        <h3 className="text-sm md:text-xl font-black italic mb-1 md:mb-3 text-blue-600 relative z-10">{s.title}</h3>
+                                                        <p className="text-[11px] md:text-sm text-slate-500 font-bold relative z-10">{s.text}</p>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                                {/* ▼▼▼ 復元・修正: 活動報告表示（一般公開画面） ▼▼▼ */}
                                 {activeTab === 'thanks' && (
-                                    <div className="max-w-4xl mx-auto py-20 px-8 fade-in">
-                                        <h2 className="text-center text-3xl font-black italic uppercase mb-12 tracking-tighter text-blue-600">活動報告</h2>
+                                    <div className="max-w-4xl mx-auto py-8 md:py-20 px-4 md:px-8 fade-in">
+                                        <h2 className="text-center text-2xl md:text-3xl font-black italic uppercase mb-8 text-blue-600">活動報告</h2>
                                         {reports.length === 0 ? 
-                                            <p className="text-center text-slate-400 font-bold">まだ活動報告はありません。</p> :
-                                            <div className="space-y-8">
+                                            <p className="text-center text-slate-400 font-bold">まだありません。</p> :
+                                            <div className="space-y-4 md:space-y-8">
                                                 {reports.map(r=>(
-                                                    <div key={r.id} className="glass-panel p-8 rounded-[2rem] flex flex-col md:flex-row gap-8 items-start">
+                                                    <div key={r.id} className="glass-panel p-4 md:p-8 rounded-[1.5rem] md:rounded-[2rem] flex flex-col md:flex-row gap-4 md:gap-8 items-start">
                                                         <div className="w-full md:w-48 aspect-video bg-slate-100 rounded-xl overflow-hidden shrink-0">
                                                             <img src={r.image || "https://placehold.co/400x300"} className="w-full h-full object-cover"/>
                                                         </div>
                                                         <div>
-                                                            <div className="flex items-baseline gap-2 mb-2">
-                                                                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded font-bold">{r.team}</span>
-                                                                <span className="text-xs text-slate-400">{r.date}</span>
+                                                            <div className="flex items-baseline gap-2 mb-1">
+                                                                <span className="text-[8px] md:text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-bold">{r.team}</span>
+                                                                <span className="text-[9px] md:text-xs text-slate-400">{r.date}</span>
                                                             </div>
-                                                            <h3 className="text-xl font-black text-slate-800 mb-2">{r.title}</h3>
-                                                            <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{r.content}</p>
+                                                            <h3 className="text-sm md:text-xl font-black text-slate-800 mb-1">{r.title}</h3>
+                                                            <p className="text-[11px] md:text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{r.content}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -847,7 +751,6 @@
                                         }
                                     </div>
                                 )}
-                                {/* ▲▲▲▲▲▲ */}
                             </>
                         ) : view === 'detail' ? (
                             <div className="max-w-6xl mx-auto p-2 md:p-4 pb-20">
@@ -856,150 +759,125 @@
                                     <div className="lg:col-span-3">
                                         <div className="glass-panel p-3 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-t-4 border-blue-600 relative overflow-hidden">
                                             {selectedCampaign.current >= calcTarget(selectedCampaign.price) && <div className="absolute top-4 right-4 z-20"><div className="goal-stamp border-4 border-pink-500 text-pink-500 text-3xl font-black p-2 rounded-lg rotate-[-15deg] opacity-50">GOAL!!</div></div>}
-                                            
-                                            {/* メイン: チーム写真 */}
-                                            <div className="relative rounded-xl md:rounded-2xl overflow-hidden aspect-video shadow-lg mb-6 group bg-slate-100">
+                                            <div className="relative rounded-xl md:rounded-2xl overflow-hidden aspect-video shadow-lg mb-4 md:mb-6 group bg-slate-100">
                                                 <img src={selectedCampaign.teamImage || selectedCampaign.image} className="w-full h-full object-cover transition duration-700 group-hover:scale-105"/>
-                                                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                                                    <h2 className="text-xl md:text-3xl font-black italic text-white leading-tight">{selectedCampaign.name}</h2>
-                                                    <p className="text-white/80 font-bold text-xs mt-1">{selectedCampaign.team}</p>
+                                                <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-black/80 to-transparent">
+                                                    <h2 className="text-lg md:text-3xl font-black italic text-white leading-tight">{selectedCampaign.name}</h2>
+                                                    <p className="text-white/80 font-bold text-[10px] md:text-xs mt-1">{selectedCampaign.team}</p>
                                                 </div>
                                             </div>
-
-                                            {/* コメントと商品画像 */}
-                                            <div className="flex flex-col md:flex-row gap-6">
-                                                <div className="flex-1 order-2 md:order-1">
-                                                    <h4 className="text-[10px] md:text-xs font-black text-blue-600 uppercase mb-2 flex items-center gap-2">
-                                                        <span className="w-8 h-[2px] bg-blue-600 inline-block"></span> Why we need this
+                                            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                                                <div className="flex-1">
+                                                    <h4 className="text-[9px] md:text-xs font-black text-blue-600 uppercase mb-2 flex items-center gap-2">
+                                                        <span className="w-6 h-[2px] bg-blue-600 inline-block"></span> Why we need this
                                                     </h4>
-                                                    <div className="text-[12px] md:text-sm text-slate-600 font-medium whitespace-pre-wrap leading-relaxed">
+                                                    <div className="text-[11px] md:text-sm text-slate-600 font-medium whitespace-pre-wrap leading-relaxed">
                                                         {selectedCampaign.description}
                                                     </div>
                                                 </div>
-                                                
-                                                {/* 商品画像 (右/上) */}
-                                                <div className="w-full md:w-40 shrink-0 order-1 md:order-2">
+                                                <div className="w-full md:w-40 shrink-0">
                                                     <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-                                                        <div className="text-[10px] text-center font-bold text-slate-400 mb-1">Target Item</div>
-                                                        <div className="w-full h-32 md:h-32 flex items-center justify-center overflow-hidden rounded-lg">
+                                                        <div className="text-[9px] text-center font-bold text-slate-400 mb-1">Target Item</div>
+                                                        <div className="w-full h-24 md:h-32 flex items-center justify-center overflow-hidden rounded-lg">
                                                             <img src={selectedCampaign.image} className="max-h-full max-w-full object-contain"/>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            
-                                            <div className="mt-6 flex justify-end gap-2">
-                                                <button onClick={copyToClipboard} className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition text-xs text-slate-500">🔗</button>
-                                                <a href={`https://twitter.com/intent/tweet?text=${shareText(selectedCampaign)}&url=${shareUrl}`} target="_blank" className="w-8 h-8 bg-black rounded-full flex items-center justify-center border border-slate-200 text-[10px] md:text-xs text-white">𝕏</a>
+                                            <div className="mt-4 flex justify-end gap-2">
+                                                <button onClick={copyToClipboard} className="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center text-[10px] text-slate-500">🔗</button>
+                                                <a href={`https://twitter.com/intent/tweet?text=${shareText(selectedCampaign)}&url=${shareUrl}`} target="_blank" className="w-7 h-7 bg-black rounded-full flex items-center justify-center text-[9px] text-white">𝕏</a>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="lg:col-span-2">
-                                        <div className="glass-panel p-3 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/50 sticky top-4 shadow-xl">
+                                        <div className="glass-panel p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/50 sticky top-4 shadow-xl">
                                             {supportStep===1 && <div className="space-y-3 md:space-y-4">
-                                                <h3 className="text-center font-black italic text-blue-600 text-xs md:text-sm">STEP 1: 金額選択</h3>
+                                                <h3 className="text-center font-black italic text-blue-600 text-[10px] md:text-sm">STEP 1: 金額選択</h3>
                                                 <div className="text-center bg-blue-50/50 rounded-lg p-2 md:p-3 border border-blue-100">
                                                     {(() => {
                                                         const target = calcTarget(selectedCampaign.price);
                                                         const remaining = target - selectedCampaign.current;
-                                                        if (remaining <= 0) return <><p className="text-lg md:text-xl font-black text-green-600">GOAL REACHED!</p><p className="text-[10px] text-slate-500">達成済み</p></>;
-                                                        return <><p className="text-[10px] text-slate-500">あと</p><p className="text-xl md:text-2xl font-black text-blue-900">¥{remaining.toLocaleString()}</p><p className="text-[10px] text-slate-500">でゴール</p></>;
+                                                        if (remaining <= 0) return <p className="text-lg font-black text-green-600">GOAL REACHED!</p>;
+                                                        return <><p className="text-[9px] text-slate-500">あと</p><p className="text-lg md:text-2xl font-black text-blue-900">¥{remaining.toLocaleString()}</p></>;
                                                     })()}
                                                 </div>
-                                                
                                                 {(() => {
                                                     const remaining = calcTarget(selectedCampaign.price) - selectedCampaign.current;
                                                     if (remaining > 0) return (
-                                                        <button onClick={()=>{setSelectedAmount(remaining);setSupportStep(2)}} className="w-full py-2 md:py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-black italic text-[10px] md:text-xs hover:scale-[1.02] transition flex justify-between px-3 md:px-4 items-center shadow-lg">
-                                                            <span className="text-[10px] opacity-90">全額支援</span>
-                                                            <span>¥{remaining.toLocaleString()}</span>
+                                                        <button onClick={()=>{setSelectedAmount(remaining);setSupportStep(2)}} className="w-full py-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-black italic text-[10px] flex justify-between px-3 items-center">
+                                                            <span>全額支援</span><span>¥{remaining.toLocaleString()}</span>
                                                         </button>
                                                     );
                                                 })()}
-
-                                                <div className="grid grid-cols-3 gap-2">{[1000,3000,5000].map(v=><button key={v} onClick={()=>{setSelectedAmount(v);setSupportStep(2)}} className="py-2 border border-slate-200 bg-white rounded-lg font-black text-[10px] md:text-xs hover:border-blue-500 hover:text-blue-600 text-slate-600 transition">¥{v.toLocaleString()}</button>)}</div>
-                                                <div className="flex gap-2"><input type="number" className="input-field text-center text-xs py-2 h-8 md:h-auto" placeholder="金額指定" onChange={handleCustomAmountChange}/><button onClick={()=>{if(selectedAmount>=1000)setSupportStep(2)}} className="px-3 bg-slate-800 text-white rounded-lg font-black text-[10px] md:text-xs whitespace-nowrap hover:bg-slate-900">決定</button></div>
+                                                <div className="grid grid-cols-3 gap-2">{[1000,3000,5000].map(v=><button key={v} onClick={()=>{setSelectedAmount(v);setSupportStep(2)}} className="py-2 border border-slate-200 bg-white rounded-lg font-black text-[10px] text-slate-600">¥{v.toLocaleString()}</button>)}</div>
+                                                <div className="flex gap-2"><input type="number" className="input-field text-center text-[10px] h-8" placeholder="金額指定" onChange={handleCustomAmountChange}/><button onClick={()=>{if(selectedAmount>=1000)setSupportStep(2)}} className="px-3 bg-slate-800 text-white rounded-lg font-black text-[10px]">決定</button></div>
                                             </div>}
-                                            {supportStep===2 && <div className="space-y-3 md:space-y-4">
-                                                <h3 className="text-center font-black italic text-blue-600 text-xs md:text-sm">STEP 2: 情報</h3>
-                                                <p className="text-center text-lg md:text-xl font-black text-slate-900">¥{selectedAmount.toLocaleString()}</p>
-                                                <input className="input-field text-xs py-2 h-8 md:h-auto" placeholder="名前" value={supporterName} onChange={e=>setSupporterName(e.target.value)} />
-                                                <input className="input-field text-xs py-2 h-8 md:h-auto" placeholder="Email" value={supporterEmail} onChange={e=>setSupporterEmail(e.target.value)} />
-                                                <button onClick={()=>setSupportStep(3)} className="w-full py-2 md:py-3 bg-blue-600 text-white rounded-lg font-black text-xs md:text-sm hover:bg-blue-700 shadow-lg">次へ</button>
+                                            {supportStep===2 && <div className="space-y-3">
+                                                <h3 className="text-center font-black italic text-blue-600 text-[10px]">STEP 2: 情報</h3>
+                                                <p className="text-center text-lg font-black text-slate-900">¥{selectedAmount.toLocaleString()}</p>
+                                                <input className="input-field text-[11px] h-9" placeholder="名前" value={supporterName} onChange={e=>setSupporterName(e.target.value)} />
+                                                <input className="input-field text-[11px] h-9" placeholder="Email" value={supporterEmail} onChange={e=>setSupporterEmail(e.target.value)} />
+                                                <button onClick={()=>setSupportStep(3)} className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-black text-[11px]">次へ</button>
                                             </div>}
-                                            {supportStep===3 && <div className="space-y-3 text-center py-2">
-                                                <h3 className="font-black italic text-xs md:text-sm text-blue-600">STEP 3: 決済</h3>
-                                                <p className="text-[10px] text-slate-500">Square決済へ移動します</p>
+                                            {supportStep===3 && <div className="space-y-3 text-center">
+                                                <h3 className="font-black italic text-[10px] text-blue-600">STEP 3: 決済</h3>
                                                 <button 
                                                     onClick={isProcessing ? null : handlePayment} 
                                                     disabled={isProcessing}
-                                                    className={`w-full py-2 md:py-3 bg-blue-600 text-white rounded-lg font-black text-sm md:text-lg shadow-xl ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:bg-blue-700'}`}
+                                                    className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-black text-sm shadow-xl"
                                                 >
-                                                    {isProcessing ? <div className="loading-spinner"></div> : "Squareで決済する"}
+                                                    {isProcessing ? "処理中..." : "Squareで決済"}
                                                 </button>
-                                                <p id="status-message" className="text-[10px] text-red-500 mt-2"></p>
                                             </div>}
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         ) : view === 'apply' ? (
-                            <div className="max-w-2xl mx-auto py-12 md:py-24 px-4 md:px-8 fade-in">
-                                <h2 className="text-3xl md:text-4xl font-black italic text-center text-blue-600 mb-8 md:mb-16">掲載リクエスト</h2>
-                                <div className="glass-panel p-6 md:p-12 rounded-[2rem] md:rounded-[4rem] space-y-6 border-t-[12px] border-blue-600 shadow-2xl">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                                            <p className="text-xs font-bold text-blue-800 mb-2">📸 チーム写真 (メイン表示用)</p>
-                                            <div className="w-full aspect-video bg-white rounded-xl overflow-hidden flex items-center justify-center border border-blue-100 relative group">
-                                                {applyForm.teamImage ? <img src={applyForm.teamImage} className="w-full h-full object-cover"/> : <span className="text-blue-200 font-bold text-2xl">+</span>}
+                            <div className="max-w-2xl mx-auto py-8 md:py-24 px-4 md:px-8 fade-in">
+                                <h2 className="text-2xl md:text-4xl font-black italic text-center text-blue-600 mb-6 md:mb-16">掲載リクエスト</h2>
+                                <div className="glass-panel p-6 md:p-12 rounded-[2rem] space-y-4 border-t-[8px] border-blue-600">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                            <p className="text-[10px] font-bold text-blue-800 mb-2">📸 チーム写真</p>
+                                            <div className="w-full aspect-video bg-white rounded-xl overflow-hidden flex items-center justify-center border border-blue-100 relative">
+                                                {applyForm.teamImage ? <img src={applyForm.teamImage} className="w-full h-full object-cover"/> : <span className="text-blue-200 font-bold text-xl">+</span>}
                                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, r => setApplyForm({...applyForm, teamImage: r}))} />
                                             </div>
                                         </div>
-                                        <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                                            <p className="text-xs font-bold text-blue-800 mb-2">🎁 商品画像 (任意)</p>
-                                            <div className="w-full aspect-video bg-white rounded-xl overflow-hidden flex items-center justify-center border border-blue-100 relative group">
-                                                {applyForm.image ? <img src={applyForm.image} className="w-full h-full object-contain"/> : <span className="text-blue-200 font-bold text-2xl">+</span>}
+                                        <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                            <p className="text-[10px] font-bold text-blue-800 mb-2">🎁 商品画像</p>
+                                            <div className="w-full aspect-video bg-white rounded-xl overflow-hidden flex items-center justify-center border border-blue-100 relative">
+                                                {applyForm.image ? <img src={applyForm.image} className="w-full h-full object-contain"/> : <span className="text-blue-200 font-bold text-xl">+</span>}
                                                 <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => handleImageUpload(e, r => setApplyForm({...applyForm, image: r}))} />
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input className="input-field" placeholder="チーム名" value={applyForm.team} onChange={e=>setApplyForm({...applyForm, team: e.target.value})} /><input className="input-field" placeholder="Email (連絡用)" value={applyForm.email} onChange={e=>setApplyForm({...applyForm, email: e.target.value})} /></div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input className="input-field" placeholder="お名前 (担当者)" value={applyForm.contactName} onChange={e=>setApplyForm({...applyForm, contactName: e.target.value})} />
-                                        <input className="input-field" placeholder="電話番号" value={applyForm.phone} onChange={e=>setApplyForm({...applyForm, phone: e.target.value})} />
-                                    </div>
-                                    <input className="input-field" placeholder="発送先住所 (〒含む)" value={applyForm.address} onChange={e=>setApplyForm({...applyForm, address: e.target.value})} />
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><input className="input-field" placeholder="チームURL" value={applyForm.teamUrl} onChange={e=>setApplyForm({...applyForm, teamUrl: e.target.value})} /><input className="input-field" placeholder="SNS URL" value={applyForm.snsUrl} onChange={e=>setApplyForm({...applyForm, snsUrl: e.target.value})} /></div>
-                                    <input className="input-field" placeholder="ほしい商品URL (Amazon/楽天)" value={applyForm.itemUrl} onChange={e=>setApplyForm({...applyForm, itemUrl: e.target.value})} />
-                                    <textarea className="input-field h-32" placeholder="リクエスト理由 (Why we need this)" value={applyForm.description} onChange={e=>setApplyForm({...applyForm, description: e.target.value})}></textarea>
-                                    
-                                    <div className="bg-white p-4 rounded-xl flex gap-4 items-start border border-slate-200">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input className="input-field text-sm py-2" placeholder="チーム名" value={applyForm.team} onChange={e=>setApplyForm({...applyForm, team: e.target.value})} /><input className="input-field text-sm py-2" placeholder="Email" value={applyForm.email} onChange={e=>setApplyForm({...applyForm, email: e.target.value})} /></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3"><input className="input-field text-sm py-2" placeholder="お名前" value={applyForm.contactName} onChange={e=>setApplyForm({...applyForm, contactName: e.target.value})} /><input className="input-field text-sm py-2" placeholder="電話番号" value={applyForm.phone} onChange={e=>setApplyForm({...applyForm, phone: e.target.value})} /></div>
+                                    <input className="input-field text-sm py-2" placeholder="発送先住所" value={applyForm.address} onChange={e=>setApplyForm({...applyForm, address: e.target.value})} />
+                                    <input className="input-field text-sm py-2" placeholder="ほしい商品URL" value={applyForm.itemUrl} onChange={e=>setApplyForm({...applyForm, itemUrl: e.target.value})} />
+                                    <textarea className="input-field h-24 text-sm" placeholder="理由" value={applyForm.description} onChange={e=>setApplyForm({...applyForm, description: e.target.value})}></textarea>
+                                    <div className="bg-white p-3 rounded-xl flex gap-3 items-start border border-slate-200">
                                         <input type="checkbox" className="mt-1" checked={applyAgreed} onChange={()=>setApplyAgreed(!applyAgreed)} />
-                                        <p className="text-xs text-slate-500">利用規約および虚偽申請でないことに同意します。</p>
+                                        <p className="text-[10px] text-slate-500">利用規約および虚偽申請でないことに同意します。</p>
                                     </div>
-                                    <p className="text-[10px] text-center text-slate-400">※発送先情報はDBには保存されず、管理者へのメールでのみ送信されます。</p>
-                                    <button 
-                                        onClick={isProcessing ? null : submitRequest} 
-                                        disabled={isProcessing || !applyAgreed}
-                                        className={`w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-xl transition flex justify-center items-center ${isProcessing || !applyAgreed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-                                    >
-                                        {isProcessing ? <div className="loading-spinner border-white border-t-blue-600 w-6 h-6"></div> : "送信"}
+                                    <button onClick={isProcessing ? null : submitRequest} disabled={isProcessing || !applyAgreed} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl">
+                                        {isProcessing ? "送信中..." : "送信"}
                                     </button>
                                 </div>
                             </div>
                         ) : null}
                     </main>
 
-                    <footer className="border-t border-slate-200 py-16 px-8 bg-white text-center md:text-left">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                            <div><span className="font-black italic text-xl text-slate-900">MySUPPORTER</span><p onClick={()=>{if(!isAdminMode)setShowLogin(true)}} className={`text-[10px] font-bold text-slate-400 tracking-widest mt-2 ${!isAdminMode && "cursor-pointer hover:text-slate-600 secret-trigger"}`}>© 2026 MySUPPORTER. All Rights Reserved.</p></div>
-                            <div className="flex flex-wrap justify-center gap-6">
-                                <button onClick={()=>setModal({open:true, title:'利用規約', content:docContent.terms})} className="text-[10px] font-black text-slate-500 hover:text-blue-600">利用規約</button>
-                                <button onClick={()=>setModal({open:true, title:'プライバシーポリシー', content:docContent.privacy})} className="text-[10px] font-black text-slate-500 hover:text-blue-600">プライバシーポリシー</button>
-                                <button onClick={()=>setModal({open:true, title:'特商法', content:docContent.tokusho})} className="text-[10px] font-black text-slate-500 hover:text-blue-600">特商法表記</button>
-                                <a href="https://ymozfleet-creator.github.io/Ark/" target="_blank" className="text-[10px] font-black text-slate-500 hover:text-blue-600">運営会社</a>
+                    <footer className="border-t border-slate-200 py-8 md:py-16 px-8 bg-white text-center">
+                        <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
+                            <div><span className="font-black italic text-lg text-slate-900">MySUPPORTER</span><p onClick={()=>{if(!isAdminMode)setShowLogin(true)}} className="text-[9px] font-bold text-slate-400 mt-1 cursor-pointer">© 2026 MySUPPORTER.</p></div>
+                            <div className="flex flex-wrap justify-center gap-4">
+                                <button onClick={()=>setModal({open:true, title:'利用規約', content:docContent.terms})} className="text-[9px] font-black text-slate-500">規約</button>
+                                <button onClick={()=>setModal({open:true, title:'プライバシー', content:docContent.privacy})} className="text-[9px] font-black text-slate-500">プライバシー</button>
+                                <button onClick={()=>setModal({open:true, title:'特商法', content:docContent.tokusho})} className="text-[9px] font-black text-slate-500">特商法</button>
                             </div>
                         </div>
                     </footer>
